@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
   </head>
-  <body>
+
     <div id="status"></div>
     <input
       type="file"
@@ -99,6 +99,42 @@
         step="1"
         onchange="adjustImage()"
       />
+    </div>
+
+    <div>
+      <p>Chinh mau</p>
+      <label>Hue</label>
+      <input
+        type="range"
+        id="hueHSVRange"
+        min="0"
+        max="360"
+        value="0"
+        step="0.1"
+        onchange="adjustImage1()"
+      />
+
+      <label>Saturation</label>
+      <input
+        type="range"
+        id="saturationHSVRange"
+        min="0"
+        max="1"
+        value="1"
+        step="0.1"
+        onchange="adjustImage1()"
+      />
+      <label>Value</label>
+      <input
+        type="range"
+        id="valueHSVRange"
+        min="0"
+        max="1"
+        value="1"
+        step="0.1"
+        onchange="adjustImage1()"
+      />
+
     </div>
 
     <script
@@ -265,6 +301,58 @@
         blurred.delete();
         return result;
       }
+
+      function adjustHSV(srcImage, hueVal, satVal, valVal) {
+    // Chuyển đổi các giá trị hue, saturation và value
+    hueVal = Math.round(hueVal / 2);  // Chuyển đổi hue từ phạm vi 0-360 sang 0-179
+    satVal = Math.round(satVal * 255);  // Chuyển đổi saturation từ phạm vi 0-1 sang 0-255
+    valVal = Math.round(valVal * 255);  // Chuyển đổi value từ phạm vi 0-1 sang 0-255
+
+    // Chuyển đổi không gian màu từ BGR sang HSV
+    let hsvImage = new cv.Mat();
+    cv.cvtColor(srcImage, hsvImage, cv.COLOR_BGR2HSV);
+
+    // Tách các kênh màu
+    let channels = new cv.MatVector();
+    cv.split(hsvImage, channels);
+
+    // Chỉnh sửa các kênh màu
+    let hueChannel = channels.get(0);
+    let satChannel = channels.get(1);
+    let valChannel = channels.get(2);
+
+    hueChannel.convertTo(hueChannel, -1, 1, hueVal);  // Điều chỉnh hue
+    satChannel.convertTo(satChannel, -1, 1, satVal);  // Điều chỉnh saturation
+    valChannel.convertTo(valChannel, -1, 1, valVal);  // Điều chỉnh value
+
+    channels.set(0, hueChannel);
+    channels.set(1, satChannel);
+    channels.set(2, valChannel);
+
+    // Ghép các kênh màu lại với nhau
+    cv.merge(channels, hsvImage);
+
+    // Chuyển đổi không gian màu từ HSV trở lại BGR
+    let dstImage = new cv.Mat();
+    cv.cvtColor(hsvImage, dstImage, cv.COLOR_HSV2BGR);
+
+    return dstImage;
+}
+
+
+      function adjustImage1(){
+        let hueHSVRange = parseFloat(document.getElementById("hueHSVRange").value);
+        let saturationHSVRange = parseFloat(document.getElementById("saturationHSVRange").value);
+        let valueHSVRange = parseFloat(document.getElementById("valueHSVRange").value);
+        let src = cv.imread("canvasInput");
+        let dst = new cv.Mat();
+        let adjusted = adjustHSV(src, hueHSVRange, saturationHSVRange, valueHSVRange);
+        cv.imshow("canvasOutput", adjusted);
+        src.delete();
+        dst.delete();
+        adjusted.delete();
+      }
+
 
       function adjustImage() {
         let alpha = parseFloat(document.getElementById("alphaRange").value);
